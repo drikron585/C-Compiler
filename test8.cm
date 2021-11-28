@@ -1,0 +1,23 @@
+int globalx;
+int globaly[3];
+
+void main(void){
+    int x;
+    int y[3];
+
+    x = input();
+    globalx = 1;
+
+    globaly[2] = input();
+    y[1] = 25;
+    y[x] = 50;
+    globaly[1] = 150;
+
+
+    output(globalx);
+    output(x);
+    output(y[x]);
+    output(globaly[globalx]);
+    output(y[globalx]);
+    output(globaly[x]);
+}

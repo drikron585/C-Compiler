@@ -1,0 +1,12 @@
+void main(void) {
+    int y;
+    int x;
+    output(y);
+    output(x);
+    y = 241 + 1;
+    output(y);
+    output(x);
+    x = y + 400 - (y/2);
+    output(y);
+    output(x);
+}

@@ -1,0 +1,17 @@
+int globalx;
+int globaly[2];
+
+void main(void){
+    int i;
+    int high;
+
+    i = 10;
+    high = 15;
+    while (i < high - 1) {
+        int t;
+        t = i * 2;
+        output(t);
+        i = i + 1;
+    }
+    output(222222);
+}

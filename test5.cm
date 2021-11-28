@@ -1,0 +1,21 @@
+int globalx;
+int gloably[2];
+
+void main(void){
+  int x[10];
+  int y;
+
+  y = 2;
+
+  x[y] = 69;
+  x[4] = 6969;
+  x[9] = 696969;
+  x[1] = 9;
+
+  output(y);
+  output(x[y]);
+  output(x[y/2]);
+  output(x[y*2]);
+  output(x[y+7]);
+  output(x[x[1]]);
+}

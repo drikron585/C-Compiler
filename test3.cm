@@ -1,0 +1,7 @@
+void main(void){
+    output(2);
+    output(3);
+    output(2);
+    output(2);
+    output(123123);
+}

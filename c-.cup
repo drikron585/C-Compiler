@@ -1,0 +1,414 @@
+/*
+   Yeong Jin Park 1002691
+   yeongjin@uoguelph.ca
+
+   Ron Drik 1029745
+   rdrik@uoguelph.ca
+
+*/
+   
+   
+/* ----------------------Preliminary Declarations Section--------------------*/
+   
+/* Import the class java_cup.runtime.*  */
+//import java_cup.runtime.*;
+import absyn.*;
+   
+/* Parser code to change the way the parser reports errors (include
+   line and column number of the error). */
+parser code {:
+   /* 
+      Change the method report_error so it will display the line and
+      column of where the error occurred in the input as well as the
+      reason for the error which is passed into the method in the
+      String 'message'. 
+   */
+    public void report_error(String message, Object info){
+      /* Create a StringBuffer called 'm' with the string 'Error' in it. */
+      StringBuffer m = new StringBuffer("Error");
+      /* 
+         Check if the information passed to the method is the same
+         type as the type java_cup.runtime.Symbol. 
+      */
+      if(info instanceof java_cup.runtime.Symbol){
+         /* 
+            Declare a java_cup.runtime.Symbol object 's' with the
+            information in the object info that is being typecasted
+            as a java_cup.runtime.Symbol object. 
+         */
+         java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+         /*
+            Check if the line number in the input is greater or
+            equal to zero. 
+         */
+         if(s.left >= 0){                
+            /* 
+               Add to the end of the StringBuffer error message
+               the line number of the error in the input. 
+            */
+               m.append(" in line "+(s.left+1));   
+            /* 
+               Check if the column number in the input is greater
+               or equal to zero. 
+            */
+            if(s.right >= 0){                
+               /* 
+                  Add to the end of the StringBuffer error message
+                  the column number of the error in the input. 
+               */
+               m.append(", column "+(s.right+1));
+            }
+         }
+      }
+   
+      /* 
+         Add to the end of the StringBuffer error message created in
+         this method the message that was passed into this method. 
+      */
+      m.append(" : "+message);
+   
+      /* 
+         Print the contents of the StringBuffer 'm', which contains
+         an error message, out on a line. 
+      */
+      System.err.println(m);
+   }
+   
+   /* 
+      Change the method report_fatal_error so when it reports a fatal
+      error it will display the line and column number of where the
+      fatal error occurred in the input as well as the reason for the
+      fatal error which is passed into the method in the object
+      'message' and then exit.
+   */
+   public void report_fatal_error(String message, Object info){
+      report_error(message, info);
+      System.exit(1);
+   }
+:};
+   
+   
+/* ------------Declaration of Terminals and Non Terminals Section----------- */
+terminal INVALID_INPUT;
+terminal IF, ELSE, WHILE;
+terminal INT, VOID, RETURN;
+terminal RPAREN, LPAREN, RSQPAREN, LSQPAREN, RCURL, LCURL, SEMICOLON, COMMA;
+terminal MULT, DIV, PLUS, MINUS, EQ, LESS, GREAT, LESSEQ, GREATEQ, NOTEQ, EQEQ;
+terminal String ID,NUM;
+
+non terminal ExpList stmnt_list, arg_list;
+non terminal Exp stmnt,exp, selection_st, return_st, factor;
+non terminal Var var;
+non terminal VarDec parameter, var_dec;
+non terminal VarDecList param_list, loc_dec;
+non terminal DecList dec_list;
+non terminal Dec decl;
+non terminal NameTy type_spec;
+
+/* ----------------------------Precedence Section-------------------- */
+// precedence right EQ;
+// precedence nonassoc LESS, GREAT, LESSEQ, GREATEQ, NOTEQ, EQEQ;
+// precedence left PLUS, MINUS;
+// precedence left MULT, DIV;
+// precedence right EQ, ELSE;
+precedence right EQ;
+precedence left COMMA, ELSE;
+precedence nonassoc LESS, GREAT, LESSEQ, GREATEQ, NOTEQ, EQEQ, INVALID_INPUT;
+precedence left PLUS, MINUS, ID;
+precedence left MULT, DIV;
+
+/* ----------------------------Grammar Section-------------------- */
+start with dec_list;
+
+dec_list     ::= dec_list:d decl:de
+                 {:
+                     DecList current_dec_list = d;
+                     while (current_dec_list.tail != null){
+                        current_dec_list = current_dec_list.tail;
+                     }
+                     current_dec_list.tail = new DecList(de, null);
+                     RESULT = d;
+                 :}
+               |  decl:d
+                  {:RESULT = new DecList(d, null);:}
+               |  error:e
+                  {: 
+                     parser.report_error("Invalid - Empty Input Program", e);
+                     RESULT = null; 
+                  :}
+               |  INVALID_INPUT
+                  {: 
+                     parser.report_error("Invalid - Empty Input Program", null);
+                     RESULT = null; 
+                  :}
+               ;
+
+decl          ::= var_dec:v 
+                  {: RESULT = v; :}
+               |  type_spec:t ID:i LPAREN param_list:p RPAREN LCURL loc_dec:l stmnt_list:s RCURL
+                  {:RESULT = new FunctionDec(tleft, tright, t, i, p, new CompoundExp(lleft, lright, l, s));:}
+               |  type_spec:t ID:i LPAREN error:e RPAREN LCURL loc_dec:l stmnt_list:s RCURL
+                  {:
+                     parser.report_error("Invalid Function Declaration", e);
+                     RESULT = new FunctionDec(tleft, tright, t, "ERROR-"+i, new VarDecList(null,null), new CompoundExp(lleft, lright, l, s));
+                  :}
+               |  type_spec:t ID:i LPAREN INVALID_INPUT:e RPAREN LCURL loc_dec:l stmnt_list:s RCURL
+                  {:
+                     parser.report_error("Invalid Function Declaration", null);
+                     RESULT = new FunctionDec(tleft, tright, t, "ERROR-"+i, new VarDecList(null,null), new CompoundExp(lleft, lright, l, s));
+                  :}
+               |  type_spec:t ID:i LPAREN param_list:p RPAREN error:e loc_dec:l stmnt_list:s RCURL
+                  {:
+                     parser.report_error("Invalid Function Declaration", e);
+                     RESULT = new FunctionDec(tleft, tright, t, "ERROR-"+i, p, new CompoundExp(lleft, lright, l,s));
+                  :}
+               |  type_spec:t ID:i LPAREN param_list:p RPAREN INVALID_INPUT:e loc_dec:l stmnt_list:s RCURL
+                  {:
+                     parser.report_error("Invalid Function Declaration", null);
+                     RESULT = new FunctionDec(tleft, tright, t, "ERROR-"+i, p, new CompoundExp(lleft, lright, l,s));
+                  :}
+               ;
+
+var_dec       ::= type_spec:t ID:i SEMICOLON
+                  {: RESULT = new SimpleDec(tleft, tright, t, i); :}
+               |  type_spec:t ID:i error:e
+                  {:
+                     parser.report_error("Invalid declaration of variable", e);
+                     RESULT = new SimpleDec(tleft, tright, new NameTy(tleft, tright,2), i);
+                  :}
+               |  type_spec:t ID:i INVALID_INPUT:e
+                  {:
+                     parser.report_error("Invalid declaration of variable", null);
+                     RESULT = new SimpleDec(tleft, tright, new NameTy(tleft, tright,2), i);
+                  :}
+               |  type_spec:t ID:i LSQPAREN NUM:n RSQPAREN SEMICOLON
+                  {:
+                     int number = Integer.parseInt(n);
+                     RESULT = new ArrayDec(tleft, tright, t, i, new IntExp(nleft, nright, number));
+                  :}
+               |  type_spec:t ID:i LSQPAREN error:e RSQPAREN SEMICOLON
+                  {:
+                     parser.report_error("Declaration of array variable must have a size of NUM", e);
+                     RESULT = new ArrayDec(tleft, tright, new NameTy(tleft, tright,2), i, new IntExp(eleft, eright, -1));
+                  :}   
+               |  type_spec:t ID:i LSQPAREN INVALID_INPUT:e RSQPAREN SEMICOLON
+                  {:
+                     parser.report_error("Declaration of array variable must have a size of NUM", null);
+                     RESULT = new ArrayDec(tleft, tright, new NameTy(tleft, tright,2), i, new IntExp(eleft, eright, -1));
+                  :}   
+               |  type_spec:t ID:i LSQPAREN NUM:n RSQPAREN error:e
+                  {:
+                     parser.report_error("Invalid declaration of index variable", e);
+                     int number = Integer.parseInt(n);
+                     RESULT = new ArrayDec(tleft, tright, t, i, new IntExp(nleft, nright, number));
+                  :}   
+               |  type_spec:t ID:i LSQPAREN NUM:n RSQPAREN INVALID_INPUT:e
+                  {:
+                     parser.report_error("Invalid declaration of index variable", null);
+                     int number = Integer.parseInt(n);
+                     RESULT = new ArrayDec(tleft, tright, t, i, new IntExp(nleft, nright, number));
+                  :}
+               ;
+type_spec     ::= INT:i
+                  {: RESULT = new NameTy(ileft, iright, NameTy.INT); :}
+               |  VOID:v
+                  {: RESULT = new NameTy(vleft, vright, NameTy.VOID); :}
+               |  error:e
+                  {:
+                     parser.report_error("Error invalid variable type", e);
+                     RESULT = new NameTy(eleft, eright, 2);
+                  :}
+               |  INVALID_INPUT:e
+                  {:
+                     parser.report_error("Error invalid variable type", null);
+                     RESULT = new NameTy(eleft, eright, 2);
+                  :}
+               ;
+
+param_list    ::= param_list:p COMMA parameter:pa
+                  {:
+                     VarDecList current_param_list = p;
+                     while(current_param_list.tail != null){
+                        current_param_list = current_param_list.tail;
+                     }
+                     current_param_list.tail = new VarDecList(pa, null);
+                     RESULT = p;
+                  :}
+               |  parameter:p
+                  {: RESULT = new VarDecList(p, null); :}
+               |  VOID
+                  {: RESULT = null; :}
+               ;
+
+parameter     ::= type_spec:t ID:i
+                  {: RESULT = new SimpleDec(tleft, tright, t, i); :}
+               |  type_spec:t ID:i LSQPAREN RSQPAREN
+                  {: RESULT = new ArrayDec(tleft, tright, t, i, null); :}
+               ;
+
+loc_dec       ::= loc_dec:l var_dec:v
+                  {:
+                     VarDecList current_loc_list = l;
+                     while (current_loc_list.tail != null){
+                        current_loc_list = current_loc_list.tail;
+                     }
+                     current_loc_list.tail = new VarDecList(v, null);
+                     RESULT = l;
+                  :}
+               |  {: RESULT = new VarDecList(null, null); :}
+               ;
+selection_st  ::= IF:i LPAREN exp:e RPAREN stmnt:s
+                  {: RESULT = new IfExp(ileft, iright, e, s, null); :}
+               |  IF:i LPAREN error:e RPAREN stmnt:s
+                  {:
+                     parser.report_error("Invalid declaration of variable", e);
+                     RESULT = new IfExp(ileft, iright, null, s, null);
+                  :}
+               |  IF:i LPAREN INVALID_INPUT:e RPAREN stmnt:s
+                  {:
+                     parser.report_error("Invalid declaration of variable", null);
+                     RESULT = new IfExp(ileft, iright, null, s, null);
+                  :}
+               |  IF:i LPAREN exp:e RPAREN stmnt:s1 ELSE stmnt:s2
+                  {: RESULT = new IfExp(ileft, iright, e, s1, s2); :}
+               |  IF:i LPAREN error:e RPAREN stmnt:s1 ELSE stmnt:s2
+                  {:
+                     parser.report_error("Invalid if loop condition", e);
+                     RESULT = new IfExp(ileft, iright, null,  new NilExp(ileft, iright), s2);
+                  :}
+               |  IF:i LPAREN INVALID_INPUT:e RPAREN stmnt:s1 ELSE stmnt:s2
+                  {:
+                     parser.report_error("Invalid if loop condition", null);
+                     RESULT = new IfExp(ileft, iright, null,  new NilExp(ileft, iright), s2);
+                  :}
+               ;
+
+stmnt_list    ::= stmnt_list:s stmnt:st
+                  {:
+                     ExpList current_stmnt_list = s;
+                     while (current_stmnt_list.tail != null){
+                        current_stmnt_list = current_stmnt_list.tail;
+                     }
+                     current_stmnt_list.tail = new ExpList(st, null);
+                     RESULT = s;
+                  :}
+               |  {: RESULT = new ExpList(null, null); :}
+               
+               ;
+
+stmnt         ::= exp:e SEMICOLON
+                  {: RESULT = e; :}
+               |  SEMICOLON
+                  {: RESULT = null; :}
+               |  LCURL loc_dec:l stmnt_list:s RCURL
+                  {: RESULT = new CompoundExp(sleft, sright, l, s); :}
+               |  selection_st:s
+                  {: RESULT = s; :}
+               |  WHILE:w LPAREN exp:e RPAREN stmnt:s 
+                  {: RESULT = new WhileExp(wleft, wright, e, s); :}
+               |  WHILE:w LPAREN error:e RPAREN stmnt:s 
+                  {: 
+                     parser.report_error("Invalid while loop condition", e);
+                     RESULT = new WhileExp(wleft, wright, null, s); 
+                  :}
+               |  WHILE:w LPAREN INVALID_INPUT:e RPAREN stmnt:s 
+                  {: 
+                     parser.report_error("Invalid while loop condition", null);
+                     RESULT = new WhileExp(wleft, wright, null, s); 
+                  :}
+               |  return_st:r 
+                  {: RESULT = r; :}
+               ;
+               
+return_st     ::= RETURN:r exp:e SEMICOLON
+                  {: RESULT = new ReturnExp(rleft, rright, e, 0); :}
+               |  RETURN:r SEMICOLON
+                  {: RESULT = new ReturnExp(rleft, rright, null, 0); :}
+               |  RETURN:r error:e
+                  {: 
+                     parser.report_error("Invalid declaration of return", e);
+                     RESULT = new ReturnExp(rleft, rright, null, 1); 
+                  :}
+               |  RETURN:r INVALID_INPUT:e
+                  {: 
+                     parser.report_error("Invalid declaration of return", null);
+                     RESULT = new ReturnExp(rleft, rright, null, 1); 
+                  :}
+               ;
+exp           ::= var:v EQ exp:e
+                  {: RESULT = new AssignExp(vleft, vright, v, e); :}
+               |  exp:e1 EQEQ exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.EQEQ, e2); :}
+               |  exp:e1 NOTEQ exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.NE, e2); :}
+               |  exp:e1 LESS exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.LT, e2); :}
+               |   exp:e1 LESSEQ exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.LE, e2); :}
+               |  exp:e1 GREAT exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.GT, e2); :}
+               |  exp:e1 GREATEQ exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.GE, e2); :}
+               |  exp:e1 PLUS exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.PLUS, e2); :}
+               |  exp:e1 MINUS exp:e2
+                  {: RESULT = new OpExp(e1left, e1right, e1, OpExp.MINUS, e2); :}
+               |  exp:e MULT factor:f
+                  {: RESULT = new OpExp(eleft, eright, e, OpExp.MUL, f); :}
+               |  exp:e DIV factor:f
+                  {: RESULT = new OpExp(eleft, eright, e, OpExp.DIV, f); :}
+               |  factor:f
+                  {: RESULT = f; :}
+               |  exp:e1 INVALID_INPUT:i exp:e2
+                  {:
+                     parser.report_error("Invalid Binary Operator", null);
+                     RESULT = new OpExp(e1left, e1right, e1, OpExp.ERROROP, e2); 
+                  :}
+               |  exp:e1 ID:i exp:e2
+                  {:
+                     parser.report_error("Invalid Binary Operator", null);
+                     RESULT = new OpExp(e1left, e1right, e1, OpExp.ERROROP, e2); 
+                  :}
+               ;
+factor        ::= LPAREN exp:s1 RPAREN
+                  {: RESULT = s1; :}
+               |  ID:i LPAREN arg_list:a_list RPAREN
+               {: RESULT = new CallExp(ileft, iright, i, a_list); :}
+               |  ID:i LPAREN RPAREN
+                  {: RESULT = new CallExp(ileft, iright,i, null); :}
+               |  NUM:n
+                  {: int number = Integer.parseInt(n);
+                  RESULT = new IntExp(nleft, nright, number); :}
+               |  var:v
+                  {: RESULT = new VarExp(vleft, vright,v); :}
+               ;
+                              
+arg_list      ::= arg_list:a COMMA exp:e
+                  {:
+                     ExpList current_arg_list = a;
+                     while (current_arg_list.tail != null){
+                        current_arg_list = current_arg_list.tail;
+                     }
+                     current_arg_list.tail = new ExpList(e, null);
+                     RESULT = a;
+                  :}
+               |  exp:e 
+                  {:RESULT = new ExpList(e, null); :}
+               
+               ;
+
+var           ::= ID:i
+                  {: RESULT = new SimpleVar(ileft, iright, i); :}
+               |  ID:i LSQPAREN exp:s RSQPAREN
+                  {: RESULT = new IndexVar(ileft, iright, i, s); :}
+               |  ID:i LSQPAREN error:e RSQPAREN
+                  {: 
+                     parser.report_error("Invalid array usage", e);
+                     RESULT = new IndexVar(ileft, iright, i, new NilExp(ileft, iright)); 
+                  :}
+               |  ID:i LSQPAREN INVALID_INPUT:e RSQPAREN
+                  {: 
+                     parser.report_error("Invalid array usage", null);
+                     RESULT = new IndexVar(ileft, iright, i, new NilExp(ileft, iright)); 
+                  :}
+               ;

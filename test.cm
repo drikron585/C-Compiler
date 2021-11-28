@@ -1,0 +1,8 @@
+int func(void){
+  int x;
+  x = 2;
+  return 123;
+}
+void main(void){
+  output(func());
+}

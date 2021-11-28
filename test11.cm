@@ -1,0 +1,14 @@
+void gcd(int x, int y){
+  output(x);
+  output(y);
+}
+
+void main(void){
+
+  int x1;
+  x1 = 2;
+
+  gcd(123,x1);
+  output(69);
+
+}

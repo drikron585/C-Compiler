@@ -1,0 +1,46 @@
+int globalx;
+int globaly[5];
+
+void main(void){
+    int x;
+
+    x = 0;
+    globaly[x] = 100;
+    x = 1;
+    globaly[x] = 101;
+    x = 2;
+    globaly[x] = 102;
+    x = 3;
+    globaly[x] = 103;
+    x = 4;
+    globaly[x] = 104;
+
+    x = 0-2;
+    output(x);
+    x = globaly[x];
+    x = 0-1;
+    output(x);
+    x = globaly[x];
+    x = 0;
+    output(x);
+    x = globaly[x];
+    x = 1;
+    output(x);
+    x = globaly[x];
+    x = 2;
+    output(x);
+    x = globaly[x];
+    x = 3;
+    output(x);
+    x = globaly[x];
+    x = 4;
+    output(x);
+    x = globaly[x];
+    x = 5;
+    output(x);    
+    x = globaly[x];
+    x = 6;
+    output(x);
+    x = globaly[x];
+
+}

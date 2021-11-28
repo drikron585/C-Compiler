@@ -1,0 +1,20 @@
+int globalx;
+int gloably[2];
+
+int returngcd(void){
+    int x2;
+    x2 = 24444;
+    return x2;
+}
+
+int gcd(void){
+    int x1;
+    x1 = 233323;
+    return returngcd();
+}
+
+void main(void){
+    int x;
+    x = gcd();
+    output(x);
+}

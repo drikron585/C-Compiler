@@ -1,0 +1,22 @@
+int gcd(void){
+  int x1;
+  x1 = 19;
+  return x1;
+}
+
+void gcd1(void){
+  int x2;
+  x2 = 14;
+}
+
+void main(void){
+  int x;
+  int y[2];
+  gcd1();
+  x = gcd();
+  x = gcd();
+  x = gcd();
+  x = gcd();
+  x = gcd();
+  output(((gcd() + gcd() + gcd()) / gcd()));
+}

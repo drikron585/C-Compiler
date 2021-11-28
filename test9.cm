@@ -1,0 +1,9 @@
+void main(void){
+  int x;
+  int y[5];
+  y[2] = 32;
+  y[3] = 33;
+  y[4] = 1111111;
+  x = 2;
+  output(y[3]);
+}
