@@ -11,7 +11,3 @@ Requirements to run
 
 In order for the program to work correctly, the Makefile must be configured with the proper locations of Jflex and CUP.
 Instructions on running the program are inside of the project readme.txt.
-
-
-Sample execution output
------------------------
